@@ -140,8 +140,11 @@ class UpdateBody(BaseModel):
 
 @app.patch("/library/{mid}")
 async def update(mid: str, b: UpdateBody):
-    await update_media(mid, b.user_id, b.status, b.rating, b.review)
-    return {"ok": True}
+    try:
+        await update_media(mid, b.user_id, b.status, b.rating, b.review)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 @app.delete("/library/{mid}/{user_id}")
 async def delete(mid: str, user_id: str):
