@@ -78,8 +78,7 @@ async def search(q: str, type: str = "all"):
         if type in ("all", "movie", "tv") and TMDB_KEY:
             for mt in (["movie","tv"] if type == "all" else [type]):
                 try:
-                    r = await client.get(f"https://api.themoviedb.org/3/search/{mt}?query={q}&page=1",
-                        headers={"Authorization": f"Bearer {TMDB_KEY}"})
+                    r = await client.get(f"https://api.themoviedb.org/3/search/{mt}?query={q}&page=1&api_key={TMDB_KEY}")
                     for d in r.json().get("results",[])[:3]:
                         title = d.get("title") or d.get("name","")
                         year = (d.get("release_date") or d.get("first_air_date") or "")[:4]
