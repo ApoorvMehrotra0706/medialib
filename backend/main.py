@@ -6,7 +6,7 @@ import bcrypt, os, httpx
 from database import init_db, create_user, get_user_by_email, add_media, list_media, update_media, delete_media
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allow_headers=["*"])
 
 TMDB_KEY = os.getenv("TMDB_API_KEY", "")
 RAWG_KEY = os.getenv("RAWG_API_KEY", "")
