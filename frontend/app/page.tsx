@@ -40,7 +40,9 @@ export default function Home() {
   const [selected, setSelected]           = useState<MediaItem | null>(null);
   const [loadingLib, setLoadingLib]       = useState(false);
   const [reviewText, setReviewText]       = useState("");
+  const [editingReview, setEditingReview] = useState(false);
   const [savingReview, setSavingReview]   = useState(false);
+  const [savedToast, setSavedToast]       = useState(false);
   const [addingId, setAddingId]           = useState<string | null>(null);
 
   const userId = session?.user?.id;
@@ -73,9 +75,9 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [query, activeType]);
 
-  // Sync review textarea when modal opens
+  // Sync review textarea when modal opens/switches item
   useEffect(() => {
-    if (selected) setReviewText(selected.review || "");
+    if (selected) { setReviewText(selected.review || ""); setEditingReview(false); }
   }, [selected?.id]);
 
   async function addToLibrary(item: SearchResult) {
@@ -108,6 +110,9 @@ export default function Home() {
     setSavingReview(true);
     await updateItem(selected.id, { review: reviewText });
     setSavingReview(false);
+    setEditingReview(false);
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 5000);
   }
 
   async function deleteItem(id: string) {
@@ -359,15 +364,30 @@ export default function Home() {
 
               {/* Review */}
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2d2d4a", marginBottom: 12 }}>Review / Notes</p>
-                <textarea
-                  value={reviewText}
-                  onChange={e => setReviewText(e.target.value)}
-                  placeholder="Write your thoughts, notes, or a review…"
-                  style={{ width: "100%", minHeight: 100, borderRadius: 16, padding: "14px 16px", background: "#0a0a14", border: "1px solid rgba(255,255,255,0.08)", color: "#e2e8f0", fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, boxSizing: "border-box" }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(168,85,247,0.5)")}
-                  onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2d2d4a", margin: 0 }}>Review / Notes</p>
+                  {!editingReview && (
+                    <button onClick={() => setEditingReview(true)}
+                      style={{ fontSize: 12, fontWeight: 600, color: "#7c3aed", background: "transparent", border: "none", cursor: "pointer", padding: "2px 6px" }}>
+                      ✏ Edit
+                    </button>
+                  )}
+                </div>
+                {editingReview ? (
+                  <textarea
+                    value={reviewText}
+                    onChange={e => setReviewText(e.target.value)}
+                    placeholder="Write your thoughts, notes, or a review…"
+                    autoFocus
+                    style={{ width: "100%", minHeight: 100, borderRadius: 16, padding: "14px 16px", background: "#0a0a14", border: "1px solid rgba(168,85,247,0.5)", color: "#e2e8f0", fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, boxSizing: "border-box" }}
+                    onFocus={e => (e.currentTarget.style.borderColor = "rgba(168,85,247,0.5)")}
+                    onBlur={e => (e.currentTarget.style.borderColor = "rgba(168,85,247,0.5)")}
+                  />
+                ) : (
+                  <div style={{ minHeight: 60, borderRadius: 16, padding: "14px 16px", background: "#0a0a14", border: "1px solid rgba(255,255,255,0.06)", color: reviewText ? "#94a3b8" : "#2d2d4a", fontSize: 14, lineHeight: 1.6 }}>
+                    {reviewText || "No notes yet. Click Edit to add one."}
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -378,10 +398,18 @@ export default function Home() {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; }}>
                   🗑 Remove from library
                 </button>
-                <button onClick={saveReview} disabled={savingReview}
-                  style={{ padding: "10px 28px", borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: savingReview ? "wait" : "pointer", color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", border: "none", opacity: savingReview ? 0.7 : 1, transition: "opacity 0.15s" }}>
-                  {savingReview ? "Saving…" : "Save notes"}
-                </button>
+                {editingReview && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setReviewText(selected.review || ""); setEditingReview(false); }}
+                      style={{ padding: "10px 18px", borderRadius: 14, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#64748b", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      Cancel
+                    </button>
+                    <button onClick={saveReview} disabled={savingReview}
+                      style={{ padding: "10px 28px", borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: savingReview ? "wait" : "pointer", color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", border: "none", opacity: savingReview ? 0.7 : 1, transition: "opacity 0.15s" }}>
+                      {savingReview ? "Saving…" : "Save notes"}
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -389,7 +417,17 @@ export default function Home() {
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {/* Toast */}
+      {savedToast && (
+        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", zIndex: 100, padding: "12px 24px", borderRadius: 16, background: "#10b981", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 8px 32px rgba(16,185,129,0.4)", pointerEvents: "none", animation: "fadeInUp 0.2s ease" }}>
+          ✓ Notes saved
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+      `}</style>
     </div>
   );
 }
