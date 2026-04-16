@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 import bcrypt, os, httpx, logging
 logging.basicConfig(level=logging.INFO)
-from database import init_db, create_user, get_user_by_email, add_media, list_media, update_media, delete_media
+from database import init_db, create_user, get_user_by_email, get_user_by_id, update_user, add_media, list_media, update_media, delete_media
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=False)
@@ -45,6 +45,29 @@ async def login(b: AuthBody):
     if not user or not bcrypt.checkpw(b.password.encode(), user["password_hash"].encode()):
         raise HTTPException(401, "Invalid credentials")
     return {"user": {"id": user["id"], "email": user["email"], "name": user["name"]}}
+
+class ProfileBody(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
+@app.patch("/auth/profile")
+async def update_profile(b: ProfileBody):
+    user = await get_user_by_id(b.user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    if b.new_password:
+        if not b.current_password:
+            raise HTTPException(400, "Current password is required")
+        if not bcrypt.checkpw(b.current_password.encode(), user["password_hash"].encode()):
+            raise HTTPException(401, "Current password is incorrect")
+        new_hash = bcrypt.hashpw(b.new_password.encode(), bcrypt.gensalt()).decode()
+        await update_user(b.user_id, password_hash=new_hash)
+    if b.name is not None and b.name.strip():
+        await update_user(b.user_id, name=b.name.strip())
+    updated = await get_user_by_id(b.user_id)
+    return {"user": {"id": updated["id"], "email": updated["email"], "name": updated["name"]}}
 
 # ── Search ────────────────────────────────────────────────────────────────────
 @app.get("/search")

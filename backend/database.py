@@ -66,6 +66,17 @@ async def get_user_by_email(email):
     rows = _rows(await _turso("SELECT * FROM users WHERE email=?", [email]))
     return rows[0] if rows else None
 
+async def get_user_by_id(uid):
+    rows = _rows(await _turso("SELECT * FROM users WHERE id=?", [uid]))
+    return rows[0] if rows else None
+
+async def update_user(uid, name=None, password_hash=None):
+    now = datetime.utcnow().isoformat()
+    if name is not None:
+        await _turso("UPDATE users SET name=? WHERE id=?", [name, uid])
+    if password_hash is not None:
+        await _turso("UPDATE users SET password_hash=? WHERE id=?", [password_hash, uid])
+
 # ── Media CRUD ────────────────────────────────────────────────────────────────
 async def add_media(user_id, external_id, media_type, title, cover, year, description, genres):
     mid = str(uuid.uuid4()); now = datetime.utcnow().isoformat()
