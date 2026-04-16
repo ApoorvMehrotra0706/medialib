@@ -7,8 +7,8 @@ TURSO_TOKEN = os.getenv("TURSO_TOKEN", "").strip()
 
 def _arg(v):
     if v is None: return {"type": "null"}
-    if isinstance(v, bool): return {"type": "integer", "value": int(v)}
-    if isinstance(v, int): return {"type": "integer", "value": v}
+    if isinstance(v, bool): return {"type": "integer", "value": str(int(v))}
+    if isinstance(v, int): return {"type": "integer", "value": str(v)}
     if isinstance(v, float): return {"type": "real", "value": v}
     return {"type": "text", "value": str(v)}
 
