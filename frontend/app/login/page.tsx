@@ -70,7 +70,12 @@ export default function LoginPage() {
                     onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.boxShadow = "none"; }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 6, letterSpacing: "0.06em" }}>PASSWORD</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.06em" }}>PASSWORD</label>
+                    {tab === "login" && (
+                      <a href="/forgot-password" style={{ fontSize: 11, color: "#7c3aed", textDecoration: "none", fontWeight: 600 }}>Forgot password?</a>
+                    )}
+                  </div>
                   <input style={inputStyle} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8+ characters" minLength={8}
                     autoComplete={tab === "login" ? "current-password" : "new-password"}
                     onFocus={e => { e.currentTarget.style.borderColor = "#a855f7"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.2)"; }}

@@ -1,6 +1,6 @@
-import httpx, uuid, os, logging
+import httpx, uuid, os, logging, secrets
 logger = logging.getLogger(__name__)
-from datetime import datetime
+from datetime import datetime, timedelta
 
 _raw = os.getenv("TURSO_URL", "").strip()
 TURSO_URL = _raw.replace("libsql://", "https://") + "/v2/pipeline"
@@ -54,6 +54,10 @@ async def init_db():
     for col in ["rating", "review", "cover", "year", "description", "genres"]:
         try: await _turso(f"ALTER TABLE media ADD COLUMN {col} {'REAL' if col == 'rating' else 'TEXT'}")
         except: pass
+    await _turso("""CREATE TABLE IF NOT EXISTS password_resets (
+        token TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        expires_at TEXT NOT NULL)""")
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 async def create_user(email, name, password_hash):
@@ -76,6 +80,21 @@ async def update_user(uid, name=None, password_hash=None):
         await _turso("UPDATE users SET name=? WHERE id=?", [name, uid])
     if password_hash is not None:
         await _turso("UPDATE users SET password_hash=? WHERE id=?", [password_hash, uid])
+
+# ── Password reset tokens ─────────────────────────────────────────────────────
+async def create_reset_token(user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+    await _turso("DELETE FROM password_resets WHERE user_id=?", [user_id])
+    await _turso("INSERT INTO password_resets (token,user_id,expires_at) VALUES (?,?,?)", [token, user_id, expires_at])
+    return token
+
+async def get_reset_token(token: str):
+    rows = _rows(await _turso("SELECT * FROM password_resets WHERE token=?", [token]))
+    return rows[0] if rows else None
+
+async def delete_reset_token(token: str):
+    await _turso("DELETE FROM password_resets WHERE token=?", [token])
 
 # ── Media CRUD ────────────────────────────────────────────────────────────────
 async def add_media(user_id, external_id, media_type, title, cover, year, description, genres):

@@ -3,9 +3,16 @@ from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-import bcrypt, os, httpx, logging
+import bcrypt, os, httpx, logging, asyncio, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 logging.basicConfig(level=logging.INFO)
-from database import init_db, create_user, get_user_by_email, get_user_by_id, update_user, add_media, list_media, update_media, delete_media
+from database import init_db, create_user, get_user_by_email, get_user_by_id, update_user, create_reset_token, get_reset_token, delete_reset_token, add_media, list_media, update_media, delete_media
+
+SMTP_USER     = os.getenv("SMTP_USER", "")
+SMTP_PASS     = os.getenv("SMTP_PASS", "")
+FRONTEND_URL  = os.getenv("FRONTEND_URL", "https://medialib-delta.vercel.app")
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=False)
@@ -45,6 +52,65 @@ async def login(b: AuthBody):
     if not user or not bcrypt.checkpw(b.password.encode(), user["password_hash"].encode()):
         raise HTTPException(401, "Invalid credentials")
     return {"user": {"id": user["id"], "email": user["email"], "name": user["name"]}}
+
+def _send_email(to: str, subject: str, html: str, text: str):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = f"Medialib <{SMTP_USER}>"
+    msg["To"]      = to
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        s.login(SMTP_USER, SMTP_PASS)
+        s.sendmail(SMTP_USER, to, msg.as_string())
+
+class ForgotBody(BaseModel):
+    email: str
+
+class ResetBody(BaseModel):
+    token: str
+    new_password: str
+
+@app.post("/auth/forgot-password")
+async def forgot_password(b: ForgotBody):
+    if not SMTP_USER or not SMTP_PASS:
+        raise HTTPException(503, "Email service not configured — add SMTP_USER and SMTP_PASS to environment variables")
+    user = await get_user_by_email(b.email)
+    if not user:
+        return {"ok": True}  # don't reveal whether email exists
+    token = await create_reset_token(user["id"])
+    link  = f"{FRONTEND_URL}/reset-password?token={token}"
+    html  = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f1e;border-radius:16px;color:#e2e8f0">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:40px">📚</div>
+        <h2 style="color:#fff;margin:8px 0 4px">Reset your password</h2>
+        <p style="color:#64748b;font-size:14px;margin:0">This link expires in 1 hour</p>
+      </div>
+      <a href="{link}" style="display:block;text-align:center;padding:14px 24px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:20px">
+        Reset password →
+      </a>
+      <p style="font-size:12px;color:#334155;text-align:center">If you didn't request this, you can safely ignore this email.</p>
+    </div>
+    """
+    text = f"Reset your Medialib password by visiting:\n\n{link}\n\nThis link expires in 1 hour."
+    await asyncio.to_thread(_send_email, b.email, "Reset your Medialib password", html, text)
+    return {"ok": True}
+
+@app.post("/auth/reset-password")
+async def reset_password(b: ResetBody):
+    if len(b.new_password) < 8:
+        raise HTTPException(400, "Password must be at least 8 characters")
+    record = await get_reset_token(b.token)
+    if not record:
+        raise HTTPException(400, "Invalid or expired reset link")
+    if datetime.fromisoformat(record["expires_at"]) < datetime.utcnow():
+        await delete_reset_token(b.token)
+        raise HTTPException(400, "Reset link has expired — please request a new one")
+    new_hash = bcrypt.hashpw(b.new_password.encode(), bcrypt.gensalt()).decode()
+    await update_user(record["user_id"], password_hash=new_hash)
+    await delete_reset_token(b.token)
+    return {"ok": True}
 
 class ProfileBody(BaseModel):
     user_id: str
