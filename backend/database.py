@@ -1,4 +1,4 @@
-import httpx, json, uuid, os, re, logging
+import httpx, uuid, os, logging
 logger = logging.getLogger(__name__)
 from datetime import datetime
 
@@ -18,7 +18,6 @@ async def _turso(sql: str, args: list = None):
         {"type": "execute", "stmt": {"sql": sql, "args": [_arg(a) for a in (args or [])]}},
         {"type": "close"},
     ]}
-    logger.info(f"TURSO REQUEST: {json.dumps(payload)}")
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(TURSO_URL, json=payload, headers={"Authorization": f"Bearer {TURSO_TOKEN}"})
         if not r.is_success:

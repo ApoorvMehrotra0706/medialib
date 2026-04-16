@@ -3,7 +3,7 @@ from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-import bcrypt, os, httpx, json, logging
+import bcrypt, os, httpx, logging
 logging.basicConfig(level=logging.INFO)
 from database import init_db, create_user, get_user_by_email, add_media, list_media, update_media, delete_media
 
