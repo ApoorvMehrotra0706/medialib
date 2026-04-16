@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -6,7 +7,15 @@ import bcrypt, os, httpx
 from database import init_db, create_user, get_user_by_email, add_media, list_media, update_media, delete_media
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=False)
+
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    return Response(headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+    })
 
 TMDB_KEY = os.getenv("TMDB_API_KEY", "")
 RAWG_KEY = os.getenv("RAWG_API_KEY", "")
