@@ -10,7 +10,7 @@ def _arg(v):
     if v is None: return {"type": "null"}
     if isinstance(v, bool): return {"type": "integer", "value": str(int(v))}
     if isinstance(v, int): return {"type": "integer", "value": str(v)}
-    if isinstance(v, float): return {"type": "real", "value": v}
+    if isinstance(v, float): return {"type": "float", "value": v}
     return {"type": "text", "value": str(v)}
 
 async def _turso(sql: str, args: list = None):
