@@ -21,7 +21,7 @@ function LoginForm() {
     try {
       const result = await signIn("credentials", { email, password, name, mode: tab, redirect: false });
       if (result?.error) setError(result.error === "CredentialsSignin" ? "Invalid email or password" : result.error);
-      else router.replace("/");
+      else router.replace(tab === "signup" ? "/setup-security" : "/");
     } catch { setError("Something went wrong."); } finally { setLoading(false); }
   }
 
@@ -115,5 +115,4 @@ export default function LoginPage() {
       <LoginForm />
     </Suspense>
   );
-}
 }
