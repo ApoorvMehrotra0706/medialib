@@ -54,10 +54,12 @@ async def init_db():
     for col in ["rating", "review", "cover", "year", "description", "genres"]:
         try: await _turso(f"ALTER TABLE media ADD COLUMN {col} {'REAL' if col == 'rating' else 'TEXT'}")
         except: pass
-    await _turso("""CREATE TABLE IF NOT EXISTS password_resets (
-        token TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        expires_at TEXT NOT NULL)""")
+    await _turso("""CREATE TABLE IF NOT EXISTS security_questions (
+        user_id TEXT PRIMARY KEY,
+        q1 TEXT NOT NULL,
+        a1_hash TEXT NOT NULL,
+        q2 TEXT NOT NULL,
+        a2_hash TEXT NOT NULL)""")
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 async def create_user(email, name, password_hash):
@@ -75,26 +77,21 @@ async def get_user_by_id(uid):
     return rows[0] if rows else None
 
 async def update_user(uid, name=None, password_hash=None):
-    now = datetime.utcnow().isoformat()
     if name is not None:
         await _turso("UPDATE users SET name=? WHERE id=?", [name, uid])
     if password_hash is not None:
         await _turso("UPDATE users SET password_hash=? WHERE id=?", [password_hash, uid])
 
-# ── Password reset tokens ─────────────────────────────────────────────────────
-async def create_reset_token(user_id: str) -> str:
-    token = secrets.token_urlsafe(32)
-    expires_at = (datetime.utcnow() + timedelta(hours=1)).isoformat()
-    await _turso("DELETE FROM password_resets WHERE user_id=?", [user_id])
-    await _turso("INSERT INTO password_resets (token,user_id,expires_at) VALUES (?,?,?)", [token, user_id, expires_at])
-    return token
+# ── Security questions ────────────────────────────────────────────────────────
+async def save_security_questions(user_id, q1, a1_hash, q2, a2_hash):
+    await _turso(
+        "INSERT INTO security_questions (user_id,q1,a1_hash,q2,a2_hash) VALUES (?,?,?,?,?) "
+        "ON CONFLICT(user_id) DO UPDATE SET q1=excluded.q1, a1_hash=excluded.a1_hash, q2=excluded.q2, a2_hash=excluded.a2_hash",
+        [user_id, q1, a1_hash, q2, a2_hash])
 
-async def get_reset_token(token: str):
-    rows = _rows(await _turso("SELECT * FROM password_resets WHERE token=?", [token]))
+async def get_security_questions(user_id):
+    rows = _rows(await _turso("SELECT * FROM security_questions WHERE user_id=?", [user_id]))
     return rows[0] if rows else None
-
-async def delete_reset_token(token: str):
-    await _turso("DELETE FROM password_resets WHERE token=?", [token])
 
 # ── Media CRUD ────────────────────────────────────────────────────────────────
 async def add_media(user_id, external_id, media_type, title, cover, year, description, genres):

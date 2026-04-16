@@ -1,9 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_URL } from "../lib/api";
+
+const QUESTIONS = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is your mother's maiden name?",
+  "What was the name of your elementary school?",
+  "What was your childhood nickname?",
+  "What is the name of the street you grew up on?",
+  "What was the make of your first car?",
+  "What is your oldest sibling's middle name?",
+  "What was the name of your first best friend?",
+  "What is the name of the town where your parents met?",
+];
 
 const inputStyle: React.CSSProperties = {
   width: "100%", boxSizing: "border-box", borderRadius: 12, padding: "12px 14px",
@@ -31,7 +44,22 @@ export default function ProfilePage() {
   const [confirmPw, setConfirmPw] = useState("");
   const [savingPw, setSavingPw] = useState(false);
 
+  const [sq1, setSq1]           = useState(QUESTIONS[0]);
+  const [sa1, setSa1]           = useState("");
+  const [sq2, setSq2]           = useState(QUESTIONS[1]);
+  const [sa2, setSa2]           = useState("");
+  const [savingSq, setSavingSq] = useState(false);
+  const [sqSaved, setSqSaved]   = useState(false);
+
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    fetch(`${API_URL}/auth/security-questions/${encodeURIComponent(session.user.email)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setSq1(d.q1); setSq2(d.q2); setSqSaved(true); } })
+      .catch(() => {});
+  }, [session?.user?.email]);
 
   if (status === "loading") return null;
   if (!session) { router.replace("/login"); return null; }
@@ -58,6 +86,23 @@ export default function ProfilePage() {
       else showToast("Name updated", "success");
     } catch { showToast("Network error", "error"); }
     finally { setSavingName(false); }
+  }
+
+  async function saveSecurityQuestions(e: React.FormEvent) {
+    e.preventDefault();
+    if (sq1 === sq2) { showToast("Please choose two different questions", "error"); return; }
+    if (!sa1.trim() || !sa2.trim()) { showToast("Please fill in both answers", "error"); return; }
+    setSavingSq(true);
+    try {
+      const r = await fetch(`${API_URL}/auth/security-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, q1: sq1, a1: sa1, q2: sq2, a2: sa2 }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); showToast(d.detail || "Failed to save", "error"); }
+      else { showToast("Security questions saved", "success"); setSqSaved(true); setSa1(""); setSa2(""); }
+    } catch { showToast("Network error", "error"); }
+    finally { setSavingSq(false); }
   }
 
   async function savePassword(e: React.FormEvent) {
@@ -157,6 +202,49 @@ export default function ProfilePage() {
                 <button type="submit" disabled={savingPw || !currentPw || !newPw || !confirmPw}
                   style={{ padding: "10px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", border: "none", cursor: savingPw ? "wait" : "pointer", opacity: (!currentPw || !newPw || !confirmPw || savingPw) ? 0.6 : 1, transition: "opacity 0.15s" }}>
                   {savingPw ? "Saving…" : "Update password"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Security Questions section */}
+          <div style={{ borderRadius: 24, background: "#0f0f1e", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
+            <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>Security Questions</p>
+                <p style={{ fontSize: 13, color: "#475569", margin: "4px 0 0" }}>Used to verify your identity if you forget your password</p>
+              </div>
+              {sqSaved && (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>✓ Set up</span>
+              )}
+            </div>
+            <form onSubmit={saveSecurityQuestions} style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+              {([
+                { label: "QUESTION 1", q: sq1, setQ: setSq1, a: sa1, setA: setSa1, exclude: sq2 },
+                { label: "QUESTION 2", q: sq2, setQ: setSq2, a: sa2, setA: setSa2, exclude: sq1 },
+              ] as const).map(({ label, q, setQ, a, setA, exclude }) => (
+                <div key={label} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", letterSpacing: "0.08em" }}>{label}</label>
+                  <select value={q} onChange={e => setQ(e.target.value)}
+                    style={{ ...inputStyle, borderRadius: 12, appearance: "none", cursor: "pointer" }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "#a855f7"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.15)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}>
+                    {QUESTIONS.filter(opt => opt !== exclude).map(opt => (
+                      <option key={opt} value={opt} style={{ background: "#0f0f1e" }}>{opt}</option>
+                    ))}
+                  </select>
+                  <input style={inputStyle} type="text" value={a} onChange={e => setA(e.target.value)}
+                    placeholder={sqSaved ? "Enter new answer to update" : "Your answer"}
+                    onFocus={e => { e.currentTarget.style.borderColor = "#a855f7"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.15)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}
+                  />
+                </div>
+              ))}
+              <p style={{ fontSize: 12, color: "#334155", margin: 0 }}>Answers are case-insensitive. Keep them memorable but not obvious.</p>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button type="submit" disabled={savingSq || !sa1.trim() || !sa2.trim()}
+                  style={{ padding: "10px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", border: "none", cursor: savingSq ? "wait" : "pointer", opacity: (savingSq || !sa1.trim() || !sa2.trim()) ? 0.6 : 1, transition: "opacity 0.15s" }}>
+                  {savingSq ? "Saving…" : sqSaved ? "Update questions" : "Save questions"}
                 </button>
               </div>
             </form>

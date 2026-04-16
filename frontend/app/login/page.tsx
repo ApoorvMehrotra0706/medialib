@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const { status } = useSession();
   const router = useRouter();
+  const params = useSearchParams();
   const [tab, setTab] = useState<"login"|"signup">("login");
+  const [resetSuccess] = useState(params.get("reset") === "1");
   const [name, setName] = useState(""); const [email, setEmail] = useState("");
   const [password, setPassword] = useState(""); const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
@@ -41,6 +44,11 @@ export default function LoginPage() {
           <p className="text-slate-500 text-sm mt-1">Your personal media library</p>
         </div>
 
+        {resetSuccess && (
+          <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 12, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981", fontSize: 14, fontWeight: 600, textAlign: "center" }}>
+            ✓ Password reset successfully — sign in with your new password
+          </div>
+        )}
         <div className="rounded-2xl" style={{ background: "linear-gradient(180deg,#141428 0%,#0f0f22 100%)", border: "1px solid rgba(168,85,247,0.2)", boxShadow: "0 24px 60px rgba(0,0,0,0.6)" }}>
           <div className="flex m-4 mb-0 rounded-xl p-1 gap-1" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)" }}>
             {(["login","signup"] as const).map(t => (
@@ -99,4 +107,13 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
 }
