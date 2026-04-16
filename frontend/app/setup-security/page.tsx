@@ -57,7 +57,7 @@ export default function SetupSecurityPage() {
       const r = await fetch(`${API_URL}/auth/security-questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: session.user.id, q1, a1, q2, a2 }),
+        body: JSON.stringify({ user_id: session!.user.id, q1, a1, q2, a2 }),
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
