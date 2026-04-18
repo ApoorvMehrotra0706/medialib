@@ -3,6 +3,8 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
+const G = "#0CAA41";
+
 export default function AuthButton() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
@@ -14,7 +16,7 @@ export default function AuthButton() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  if (status === "loading") return <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />;
+  if (status === "loading") return <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6" }} />;
 
   if (session?.user) {
     const full = session.user.name ?? session.user.email ?? "User";
@@ -26,50 +28,49 @@ export default function AuthButton() {
           onClick={() => setOpen(o => !o)}
           aria-label="User menu"
           aria-expanded={open}
-          style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 12px 6px 6px", borderRadius: 20, background: open ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${open ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.07)"}`, cursor: "pointer", transition: "all 0.15s" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 5px", borderRadius: 24, background: open ? "#f0fdf4" : "#f9fafb", border: `1.5px solid ${open ? G : "#e5e7eb"}`, cursor: "pointer", transition: "all 0.12s" }}
         >
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#a855f7,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          <div style={{ width: 30, height: 30, borderRadius: "50%", background: G, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
             {initials}
           </div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#cbd5e1", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{full}</span>
-          <svg style={{ width: 12, height: 12, color: "#475569", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#374151", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{full}</span>
+          <svg style={{ width: 12, height: 12, color: "#6b7280", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {open && (
-          <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, width: 240, borderRadius: 18, overflow: "hidden", zIndex: 9999, background: "#141428", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)" }}>
+          <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 228, borderRadius: 12, overflow: "hidden", zIndex: 9999, background: "#fff", border: "1px solid #e5e7eb", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" }}>
             {/* Header */}
-            <div style={{ padding: "16px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#a855f7,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: G, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                   {initials}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{full}</p>
-                  <p style={{ fontSize: 12, color: "#475569", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{full}</p>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
                 </div>
               </div>
             </div>
 
-            {/* Menu items */}
-            <div style={{ padding: "8px" }}>
+            <div style={{ padding: "6px" }}>
               <Link href="/profile" onClick={() => setOpen(false)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", borderRadius: 12, textDecoration: "none", color: "#cbd5e1", fontSize: 14, fontWeight: 500, transition: "background 0.12s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 14, fontWeight: 500, transition: "background 0.1s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                <span style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(168,85,247,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>👤</span>
-                Profile
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>👤</span>
+                Profile & Settings
               </Link>
 
-              <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "6px 0" }} />
+              <div style={{ height: 1, background: "#f3f4f6", margin: "4px 0" }} />
 
               <button
                 onClick={() => { setOpen(false); signOut({ callbackUrl: "/login" }); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", borderRadius: 12, width: "100%", background: "transparent", border: "none", color: "#f87171", fontSize: 14, fontWeight: 500, cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, width: "100%", background: "transparent", border: "none", color: "#dc2626", fontSize: 14, fontWeight: 500, cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                <span style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>→</span>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>↪</span>
                 Sign out
               </button>
             </div>
@@ -80,9 +81,17 @@ export default function AuthButton() {
   }
 
   return (
-    <Link href="/login"
-      style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 14, fontSize: 14, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", textDecoration: "none", boxShadow: "0 4px 16px rgba(124,58,237,0.4)" }}>
-      Sign in
-    </Link>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <Link href="/login"
+        style={{ padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, color: "#374151", background: "transparent", textDecoration: "none", border: "1.5px solid #e5e7eb", transition: "all 0.12s" }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = G; (e.currentTarget as HTMLElement).style.color = G; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; (e.currentTarget as HTMLElement).style.color = "#374151"; }}>
+        Sign in
+      </Link>
+      <Link href="/login"
+        style={{ padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, color: "#fff", background: G, textDecoration: "none", boxShadow: "0 2px 8px rgba(12,170,65,0.3)" }}>
+        Get started
+      </Link>
+    </div>
   );
 }

@@ -4,6 +4,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "../lib/api";
 
+const G = "#0CAA41";
+const G_DARK = "#0a8f36";
+
 const QUESTIONS = [
   "What was the name of your first pet?",
   "What city were you born in?",
@@ -17,30 +20,32 @@ const QUESTIONS = [
   "What is the name of the town where your parents met?",
 ];
 
-const inputStyle: React.CSSProperties = {
-  width: "100%", boxSizing: "border-box", borderRadius: 12, padding: "12px 14px",
-  fontSize: 14, color: "#f1f5f9", background: "#0a0a14",
-  border: "1px solid rgba(255,255,255,0.12)", outline: "none", fontFamily: "inherit",
+const inputBase: React.CSSProperties = {
+  width: "100%", boxSizing: "border-box", borderRadius: 8, padding: "11px 14px",
+  fontSize: 14, color: "#111827", background: "#f9fafb",
+  border: "1.5px solid #e5e7eb", outline: "none", fontFamily: "inherit",
 };
-const selectStyle: React.CSSProperties = { ...inputStyle, cursor: "pointer", appearance: "none" as any };
+const selectBase: React.CSSProperties = { ...inputBase, cursor: "pointer", appearance: "none" as any };
 
 function focusOn(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-  e.currentTarget.style.borderColor = "#a855f7";
-  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.15)";
+  e.currentTarget.style.borderColor = G;
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(12,170,65,0.12)";
+  e.currentTarget.style.background = "#fff";
 }
 function focusOff(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-  e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+  e.currentTarget.style.borderColor = "#e5e7eb";
   e.currentTarget.style.boxShadow = "none";
+  e.currentTarget.style.background = "#f9fafb";
 }
 
 export default function SetupSecurityPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [q1, setQ1] = useState(QUESTIONS[0]);
-  const [a1, setA1] = useState("");
-  const [q2, setQ2] = useState(QUESTIONS[1]);
-  const [a2, setA2] = useState("");
+  const [q1, setQ1]   = useState(QUESTIONS[0]);
+  const [a1, setA1]   = useState("");
+  const [q2, setQ2]   = useState(QUESTIONS[1]);
+  const [a2, setA2]   = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -48,90 +53,95 @@ export default function SetupSecurityPage() {
   if (!session) { router.replace("/login"); return null; }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (q1 === q2) { setError("Please choose two different questions"); return; }
     if (!a1.trim() || !a2.trim()) { setError("Please fill in both answers"); return; }
     setLoading(true);
     try {
       const r = await fetch(`${API_URL}/auth/security-questions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: session!.user.id, q1, a1, q2, a2 }),
       });
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}));
-        setError(d.detail || "Failed to save — please try again");
-      } else {
-        router.replace("/");
-      }
-    } catch {
-      setError("Network error — please try again");
-    } finally {
-      setLoading(false);
-    }
+      if (!r.ok) { const d = await r.json().catch(() => ({})); setError(d.detail || "Failed to save — please try again"); }
+      else router.replace("/");
+    } catch { setError("Network error — please try again"); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "radial-gradient(ellipse 80% 60% at 50% -10%, #1e0a4a 0%, #0d0920 45%, #09090f 100%)" }}>
-      <div style={{ width: "100%", maxWidth: 480 }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f3f4f6" }}>
+      <div style={{ width: "100%", maxWidth: 460 }}>
 
         {/* Logo + heading */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 16, background: "linear-gradient(145deg,#a855f7,#7c3aed)", fontSize: 22, marginBottom: 14, boxShadow: "0 8px 32px rgba(168,85,247,0.35)" }}>📚</div>
-          <h1 style={{ fontSize: 21, fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>One last step</h1>
-          <p style={{ fontSize: 14, color: "#64748b", margin: 0, lineHeight: 1.6 }}>
-            Set up security questions so you can recover your account<br />if you ever forget your password.
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 10, background: G, fontSize: 22, marginBottom: 12, boxShadow: "0 4px 14px rgba(12,170,65,0.3)" }}>📚</div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>One last step</h1>
+          <p style={{ fontSize: 14, color: "#6b7280", margin: 0, lineHeight: 1.6 }}>
+            Set up security questions so you can recover<br />your account if you forget your password.
           </p>
         </div>
 
-        <div style={{ borderRadius: 24, background: "linear-gradient(180deg,#141428 0%,#0f0f22 100%)", border: "1px solid rgba(168,85,247,0.2)", boxShadow: "0 24px 60px rgba(0,0,0,0.6)", overflow: "hidden" }}>
-          <form onSubmit={handleSubmit} style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
-
-            {/* Question 1 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: "0.08em" }}>QUESTION 1</label>
-              <select value={q1} onChange={e => setQ1(e.target.value)} style={selectStyle} onFocus={focusOn} onBlur={focusOff}>
-                {QUESTIONS.filter(q => q !== q2).map(q => (
-                  <option key={q} value={q} style={{ background: "#0f0f1e" }}>{q}</option>
-                ))}
-              </select>
-              <input style={inputStyle} type="text" value={a1} onChange={e => setA1(e.target.value)}
-                placeholder="Your answer" autoFocus onFocus={focusOn} onBlur={focusOff} />
+        {/* Progress indicator */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+          {["Account created", "Security setup"].map((label, i) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {i > 0 && <div style={{ width: 24, height: 1.5, background: i === 1 ? G : "#e5e7eb" }} />}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? "#e5e7eb" : G, color: i === 0 ? "#9ca3af" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                  {i === 0 ? "✓" : "2"}
+                </div>
+                <span style={{ fontSize: 12, fontWeight: i === 1 ? 700 : 400, color: i === 1 ? G : "#9ca3af" }}>{label}</span>
+              </div>
             </div>
+          ))}
+        </div>
 
-            <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+          <form onSubmit={handleSubmit} style={{ padding: "28px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-            {/* Question 2 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: "0.08em" }}>QUESTION 2</label>
-              <select value={q2} onChange={e => setQ2(e.target.value)} style={selectStyle} onFocus={focusOn} onBlur={focusOff}>
-                {QUESTIONS.filter(q => q !== q1).map(q => (
-                  <option key={q} value={q} style={{ background: "#0f0f1e" }}>{q}</option>
-                ))}
-              </select>
-              <input style={inputStyle} type="text" value={a2} onChange={e => setA2(e.target.value)}
-                placeholder="Your answer" onFocus={focusOn} onBlur={focusOff} />
-            </div>
+            {[
+              { label: "Security Question 1", q: q1, setQ: setQ1, a: a1, setA: setA1, exclude: q2, autoFocus: true },
+              { label: "Security Question 2", q: q2, setQ: setQ2, a: a2, setA: setA2, exclude: q1, autoFocus: false },
+            ].map(({ label, q, setQ, a, setA, exclude, autoFocus }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{label}</label>
+                <div style={{ position: "relative" }}>
+                  <select value={q} onChange={e => setQ(e.target.value)} style={selectBase} onFocus={focusOn} onBlur={focusOff}>
+                    {QUESTIONS.filter(opt => opt !== exclude).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+                    <svg width="12" height="12" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <input style={inputBase} type="text" value={a} onChange={e => setA(e.target.value)}
+                  placeholder="Your answer" autoFocus={autoFocus} onFocus={focusOn} onBlur={focusOff} />
+              </div>
+            ))}
 
-            <p style={{ fontSize: 12, color: "#334155", margin: 0 }}>
-              Answers are not case-sensitive. Pick something only you would know.
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
+              Answers are not case-sensitive. Choose something only you would know.
             </p>
 
             {error && (
-              <div style={{ display: "flex", gap: 8, background: "rgba(127,29,29,0.4)", border: "1px solid rgba(185,28,28,0.5)", borderRadius: 10, padding: "10px 14px" }}>
-                <span style={{ color: "#f87171" }}>⚠</span>
-                <p style={{ fontSize: 12, color: "#f87171", margin: 0 }}>{error}</p>
+              <div style={{ display: "flex", gap: 8, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px" }}>
+                <span style={{ color: "#dc2626" }}>⚠</span>
+                <p style={{ fontSize: 13, color: "#dc2626", margin: 0 }}>{error}</p>
               </div>
             )}
 
             <button type="submit" disabled={loading || !a1.trim() || !a2.trim()}
-              style={{ width: "100%", padding: "14px", borderRadius: 14, fontSize: 14, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg,#7c3aed,#5b21b6)", border: "none", cursor: loading ? "wait" : "pointer", opacity: (loading || !a1.trim() || !a2.trim()) ? 0.6 : 1, boxShadow: "0 4px 20px rgba(124,58,237,0.4)" }}>
-              {loading ? "Saving…" : "Save & go to my library →"}
+              style={{ width: "100%", padding: "13px", borderRadius: 8, fontSize: 14, fontWeight: 700, color: "#fff", background: G, border: "none", cursor: (loading || !a1.trim() || !a2.trim()) ? "not-allowed" : "pointer", opacity: (loading || !a1.trim() || !a2.trim()) ? 0.65 : 1, boxShadow: "0 2px 8px rgba(12,170,65,0.3)" }}
+              onMouseEnter={e => { const ok = !loading && a1.trim() && a2.trim(); if (ok) (e.currentTarget as HTMLElement).style.background = G_DARK; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = G; }}>
+              {loading ? "Saving…" : "Save & go to my library"}
             </button>
 
             <button type="button" onClick={() => router.replace("/")}
-              style={{ background: "none", border: "none", color: "#334155", fontSize: 13, cursor: "pointer", textAlign: "center", padding: 0 }}>
+              style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, cursor: "pointer", textAlign: "center", padding: 0 }}>
               Skip for now
             </button>
 
